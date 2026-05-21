@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "divar-ml"
+version = "0.1.0"
+description = "Divar classified ads ML: price/credit prediction and geo clustering"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.11",
+    "scikit-learn>=1.3",
+    "category-encoders>=2.6",
+    "lightgbm>=4.0",
+    "pyyaml>=6.0",
+    "joblib>=1.3",
+    "pyarrow>=14.0",
+]
+
+[project.optional-dependencies]
+notebooks = [
+    "matplotlib>=3.7",
+    "seaborn>=0.13",
+    "plotly>=5.18",
+    "geopandas>=0.14",
+    "folium>=0.15",
+    "jdatetime>=4.1",
+    "pyproj>=3.6",
+    "dtale>=3.8",
+]
+tuning = ["optuna>=3.5"]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+divar-prepare-price = "divar.pipelines.prepare_price:main"
+divar-prepare-credit = "divar.pipelines.prepare_credit:main"
+divar-train-price = "divar.pipelines.train_price:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]

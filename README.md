@@ -4,45 +4,118 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ## 🌟 Project Description
-This project analyzes data from the **Divar** platform (an advertising company in Iran), including Exploratory Data Analysis (EDA), statistical analysis, recommender system, and price/rent prediction. The main goal is to use machine learning techniques to better understand the data and provide predictive models. 🚀
+
+This project analyzes data from the **Divar** platform (an advertising company in Iran), including Exploratory Data Analysis (EDA), statistical analysis, recommender system, and price/rent prediction. The main goal is to use machine learning techniques to better understand the data and provide predictive models.
+
+**Phase 0 (MLOps foundation)** adds an installable Python package, unified data paths, YAML configs, and CLI pipelines extracted from the original notebooks.
 
 ## 👥 Contributors
+
 - [Mahdi](https://github.com/mehdirt) 👨‍💻
 - [Ramin](https://github.com/raminBadri) 👨‍💻
 
 ## 📂 Dataset
-The dataset used in this project is not available in the repository due to its large size (approximately **1 million records** 📈). It consists of **64 columns**, including:
-- 20 numerical columns 🔢
-- 44 categorical columns 🏷️
+
+The dataset is not stored in Git (~1M rows, 64 columns). Place files under `data/raw/`:
+
+| File | Purpose |
+|------|---------|
+| `Divar.csv` | Main ads dataset (required for ML pipelines) |
+| `iran_city_classification.csv` | Optional, for statistical analysis |
+
+See [data/README.md](data/README.md) for setup.
 
 ## 🗂️ Project Structure
-The `divar_project` repository is divided into 5 main sections in `src/`:
 
-1. **EDA** (Exploratory Data Analysis) 🔍: Exploratory analysis of data to understand distributions, relationships, and patterns.
-2. **Statistical_analysis** 📊: Advanced statistical analyses such as statistical tests and statistical modeling.
-3. **recommender_system** 🤖: Implementation of a recommender system for suggesting products or ads.
-4. **prediction_price** 💰 and **prediction_rent** 🏠: Predictive models for purchase price and rent. These two sections are in a shared folder.
+```text
+├── configs/              # YAML: price.yaml, credit.yaml
+├── data/raw/             # Place Divar.csv here (gitignored)
+├── data/processed/       # Generated parquet splits
+├── notebooks/            # Original Jupyter notebooks
+├── src/divar/            # Installable Python package
+│   ├── data/             # load_divar()
+│   ├── features/         # price & credit feature engineering
+│   ├── models/           # encoding, training, metrics
+│   └── pipelines/        # CLI: prepare & train
+├── tests/
+├── models/               # Saved model artifacts (gitignored)
+└── requirements.txt
+```
 
-## 🛠️ Technologies and Libraries Used
-- **Data Processing**: pandas 📊, numpy 🔢, scipy 🔍
-- **Visualization**: matplotlib 📈, seaborn 🎨, plotly 📊, geopandas 🗺️
-- **Machine Learning**: sklearn 🤖, scipy 🔬
-- **Algorithms and Models**: k-means 📍, DBSCAN 🔄, LightGBM 🌟, Random Forest Regressor 🌲
+### Notebooks
+
+| Notebook | Purpose |
+|----------|---------|
+| `notebooks/EDA.ipynb` | Exploratory analysis |
+| `notebooks/statistical_analysis.ipynb` | Statistical tests |
+| `notebooks/ml_recommender_system.ipynb` | Geo clustering |
+| `notebooks/ml_prediction_price.ipynb` | Sale price (reference) |
+| `notebooks/ml_prediction_credit.ipynb` | Rent/credit (reference) |
+
+## 🛠️ Technologies
+
+- **Core ML**: pandas, scikit-learn, LightGBM, category-encoders
+- **Notebooks / EDA**: matplotlib, seaborn, plotly, geopandas, folium
+- **Tuning** (credit notebook): Optuna
 
 ## 📋 Prerequisites
-- Python 3.11 🐍
-- Install required libraries via `pip install -r requirements.txt` (the requirements.txt file should be available in the repository).
 
-## 🚀 How to Run
-1. Clone the repository: `git clone https://github.com/username/divar_project.git` 📥
-2. Navigate to the project directory: `cd divar_project` 📁
-3. Create a virtual environment (optional): `python -m venv env` 🏗️
-4. Install libraries: `pip install -r requirements.txt` 📦
-5. For each section, run the corresponding scripts (e.g., for EDA: `python eda/main.py` ▶️).
+- Python 3.11+
+- Raw data in `data/raw/Divar.csv` (or configure `.env`)
 
-## ⚠️ Important Notes
-- The original data is not uploaded to the repository due to its size. Please download the data from the relevant source and place it in the `data/` folder. 💾
-- For questions or collaboration, use Issues or Pull Requests. 💬
+## 🚀 Setup and Run
+
+```bash
+git clone https://github.com/username/divar_project.git
+cd divar_project
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env        # optional: customize paths
+```
+
+### Environment variables
+
+| Variable | Default |
+|----------|---------|
+| `DATA_DIR` | `./data` |
+| `DIVAR_CSV` | `./data/raw/Divar.csv` |
+
+### Pipelines (sale price)
+
+```bash
+divar-prepare-price          # writes data/processed/price_{train,val}.parquet
+divar-train-price --from-processed   # trains RF + LightGBM → models/price/
+```
+
+### Pipelines (rent/credit)
+
+```bash
+divar-prepare-credit         # writes credit_{train,val,test}.parquet
+```
+
+### Use in Python
+
+```python
+from divar.data import load_divar
+from divar.features import prepare_price_dataset
+
+df = load_divar()
+train, val = prepare_price_dataset(df)
+```
+
+### Tests
+
+```bash
+pytest -q
+```
+
+## ⚠️ Notes
+
+- Original notebooks used inconsistent CSV paths; use `load_divar()` or `.env` instead.
+- Clustering/recommender notebook is not yet extracted to the package (Phase 1+).
+- For questions or collaboration, use Issues or Pull Requests.
 
 ## 📜 License
-This project is released under the **MIT License**. 📄
+
+MIT License.

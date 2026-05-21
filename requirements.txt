@@ -1,0 +1,19 @@
+# Core package (install with: pip install -e ".[dev]")
+-e .
+
+# Notebook / EDA extras
+matplotlib>=3.7
+seaborn>=0.13
+plotly>=5.18
+geopandas>=0.14
+folium>=0.15
+jdatetime>=4.1
+pyproj>=3.6
+dtale>=3.8
+
+# Hyperparameter tuning (credit notebook)
+optuna>=3.5
+
+# Development
+pytest>=7.4
+ruff>=0.4
