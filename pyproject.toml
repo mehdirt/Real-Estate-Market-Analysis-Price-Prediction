@@ -33,6 +33,11 @@ notebooks = [
     "dtale>=3.8",
 ]
 tuning = ["optuna>=3.5"]
+mlops = [
+    "dvc>=3.0",
+    "mlflow>=2.10",
+    "pandera>=0.18",
+]
 dev = [
     "pytest>=7.4",
     "ruff>=0.4",
@@ -42,6 +47,8 @@ dev = [
 divar-prepare-price = "divar.pipelines.prepare_price:main"
 divar-prepare-credit = "divar.pipelines.prepare_credit:main"
 divar-train-price = "divar.pipelines.train_price:main"
+divar-train-credit = "divar.pipelines.train_credit:main"
+divar-validate-raw = "divar.pipelines.validate_raw:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

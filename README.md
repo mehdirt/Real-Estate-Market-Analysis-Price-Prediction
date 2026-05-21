@@ -7,7 +7,9 @@
 
 This project analyzes data from the **Divar** platform (an advertising company in Iran), including Exploratory Data Analysis (EDA), statistical analysis, recommender system, and price/rent prediction. The main goal is to use machine learning techniques to better understand the data and provide predictive models.
 
-**Phase 0 (MLOps foundation)** adds an installable Python package, unified data paths, YAML configs, and CLI pipelines extracted from the original notebooks.
+**Phase 0** adds an installable Python package, unified data paths, YAML configs, and CLI pipelines extracted from the original notebooks.
+
+**Phase 1** adds **DVC** pipelines, **Pandera** data validation, and **MLflow** experiment tracking.
 
 ## 👥 Contributors
 
@@ -36,9 +38,15 @@ See [data/README.md](data/README.md) for setup.
 │   ├── data/             # load_divar()
 │   ├── features/         # price & credit feature engineering
 │   ├── models/           # encoding, training, metrics
-│   └── pipelines/        # CLI: prepare & train
+│   ├── validation/       # Pandera schemas
+│   ├── tracking/         # MLflow helpers
+│   └── pipelines/        # CLI + DVC stages
+├── dvc.yaml              # DVC pipeline definition
+├── params.yaml           # DVC experiment parameters
+├── metrics/              # DVC-tracked evaluation metrics (JSON)
 ├── tests/
-├── models/               # Saved model artifacts (gitignored)
+├── models/               # Saved model artifacts (DVC outs)
+├── mlruns/               # MLflow local tracking (gitignored)
 └── requirements.txt
 ```
 
@@ -57,6 +65,7 @@ See [data/README.md](data/README.md) for setup.
 - **Core ML**: pandas, scikit-learn, LightGBM, category-encoders
 - **Notebooks / EDA**: matplotlib, seaborn, plotly, geopandas, folium
 - **Tuning** (credit notebook): Optuna
+- **MLOps**: DVC, MLflow, Pandera
 
 ## 📋 Prerequisites
 
@@ -81,18 +90,33 @@ cp .env.example .env        # optional: customize paths
 | `DATA_DIR` | `./data` |
 | `DIVAR_CSV` | `./data/raw/Divar.csv` |
 
-### Pipelines (sale price)
+### DVC pipeline (recommended)
 
 ```bash
-divar-prepare-price          # writes data/processed/price_{train,val}.parquet
-divar-train-price --from-processed   # trains RF + LightGBM → models/price/
+pip install -e ".[mlops]"
+dvc add data/raw/Divar.csv   # once, then commit *.dvc
+dvc repro train_price        # validate → prepare → train (+ MLflow)
+dvc repro train_credit       # credit path
+dvc metrics show
+dvc exp show                 # compare experiment params
 ```
 
-### Pipelines (rent/credit)
+### CLI (sale price)
 
 ```bash
-divar-prepare-credit         # writes credit_{train,val,test}.parquet
+divar-prepare-price
+divar-train-price --from-processed --mlflow
+mlflow ui                    # open http://127.0.0.1:5000
 ```
+
+### CLI (rent/credit)
+
+```bash
+divar-prepare-credit
+divar-train-credit --from-processed --mlflow
+```
+
+Set `MLFLOW_ENABLE=true` in `.env` to log runs without `--mlflow`.
 
 ### Use in Python
 
@@ -113,7 +137,8 @@ pytest -q
 ## ⚠️ Notes
 
 - Original notebooks used inconsistent CSV paths; use `load_divar()` or `.env` instead.
-- Clustering/recommender notebook is not yet extracted to the package (Phase 1+).
+- Clustering/recommender notebook is not yet extracted to the package.
+- Configure a DVC remote (`dvc remote add`) for team data sharing when ready.
 - For questions or collaboration, use Issues or Pull Requests.
 
 ## 📜 License

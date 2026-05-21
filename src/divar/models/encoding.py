@@ -25,40 +25,64 @@ def split_xy(
     return X_train, y_train, X_val, y_val
 
 
+def _encode_frame(
+    X: pd.DataFrame,
+    y: pd.Series | None,
+    cfg: dict[str, Any],
+    te: TargetEncoder,
+    ohe: OneHotEncoder,
+    *,
+    fit: bool,
+) -> pd.DataFrame:
+    enc = cfg["encoding"]
+    X = encode_boolean_features(X, enc["boolean_columns"])
+    if fit:
+        if y is None:
+            raise ValueError("y required when fit=True")
+        X_enc = te.fit_transform(X, y)
+    else:
+        X_enc = te.transform(X)
+
+    categorical_cols = enc["categorical_columns"]
+    if fit:
+        X_cat = pd.DataFrame(
+            ohe.fit_transform(X_enc[categorical_cols]),
+            columns=ohe.get_feature_names_out(categorical_cols),
+            index=X_enc.index,
+        )
+    else:
+        X_cat = pd.DataFrame(
+            ohe.transform(X_enc[categorical_cols]),
+            columns=ohe.get_feature_names_out(categorical_cols),
+            index=X_enc.index,
+        )
+    return pd.concat([X_enc.drop(columns=categorical_cols), X_cat], axis=1)
+
+
 def fit_feature_matrices(
     X_train: pd.DataFrame,
     y_train: pd.Series,
-    X_val: pd.DataFrame,
+    X_other: pd.DataFrame,
     config: dict[str, Any] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, TargetEncoder, OneHotEncoder]:
-    """
-    Fit encoders on training data and return final numeric matrices for train and val.
-    """
+    """Fit encoders on training data; transform train and other split."""
     cfg = config or load_config("price")
     enc = cfg["encoding"]
 
-    X_train = encode_boolean_features(X_train, enc["boolean_columns"])
-    X_val = encode_boolean_features(X_val, enc["boolean_columns"])
-
     te = TargetEncoder(cols=enc["target_encoder_cols"], smoothing=enc["target_encoder_smoothing"])
-    X_train_enc = te.fit_transform(X_train, y_train)
-    X_val_enc = te.transform(X_val)
-
-    categorical_cols = enc["categorical_columns"]
     ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
 
-    X_train_cat = pd.DataFrame(
-        ohe.fit_transform(X_train_enc[categorical_cols]),
-        columns=ohe.get_feature_names_out(categorical_cols),
-        index=X_train_enc.index,
-    )
-    X_val_cat = pd.DataFrame(
-        ohe.transform(X_val_enc[categorical_cols]),
-        columns=ohe.get_feature_names_out(categorical_cols),
-        index=X_val_enc.index,
-    )
+    X_train_final = _encode_frame(X_train, y_train, cfg, te, ohe, fit=True)
+    X_other_final = _encode_frame(X_other, None, cfg, te, ohe, fit=False)
 
-    X_train_final = pd.concat([X_train_enc.drop(columns=categorical_cols), X_train_cat], axis=1)
-    X_val_final = pd.concat([X_val_enc.drop(columns=categorical_cols), X_val_cat], axis=1)
+    return X_train_final, X_other_final, te, ohe
 
-    return X_train_final, X_val_final, te, ohe
+
+def transform_features(
+    X: pd.DataFrame,
+    config: dict[str, Any],
+    te: TargetEncoder,
+    ohe: OneHotEncoder,
+) -> pd.DataFrame:
+    """Apply fitted encoders to a feature matrix."""
+    return _encode_frame(X, None, config, te, ohe, fit=False)

@@ -102,3 +102,13 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# MLflow
+mlruns/
+
+# DVC
+.dvc/cache
+.dvc/tmp
+
+# DVC metrics outputs (tracked after repro; ignore local scratch)
+# metrics/*.json is committed when produced by dvc repro
