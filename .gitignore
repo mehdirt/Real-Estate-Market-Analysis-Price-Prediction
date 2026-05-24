@@ -80,9 +80,11 @@ target/
 !/data/README.md
 !/data/raw/
 /data/raw/*
+!/data/raw/*.dvc
 !/data/raw/.gitkeep
 !/data/processed/
 /data/processed/*
+!/data/processed/*.dvc
 !/data/processed/.gitkeep
 /Divar\ Dataset
 

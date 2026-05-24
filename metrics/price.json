@@ -1,0 +1,8 @@
+{
+  "random_forest_r2": 0.6847166915827423,
+  "random_forest_mae": 1945353350.3912323,
+  "random_forest_rmse": 4508620481.893138,
+  "lightgbm_r2": 0.6979042835388507,
+  "lightgbm_mae": 1943277323.0252972,
+  "lightgbm_rmse": 4413320562.800762
+}
