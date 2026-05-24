@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "divar-ml"
-version = "0.1.0"
+version = "0.2.0"
 description = "Divar classified ads ML: price/credit prediction and geo clustering"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -38,8 +38,17 @@ mlops = [
     "mlflow>=2.10",
     "pandera>=0.18",
 ]
+serving = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.0",
+]
+monitoring = [
+    "evidently>=0.4.0",
+]
 dev = [
     "pytest>=7.4",
+    "httpx>=0.27",
     "ruff>=0.4",
 ]
 
@@ -49,6 +58,8 @@ divar-prepare-credit = "divar.pipelines.prepare_credit:main"
 divar-train-price = "divar.pipelines.train_price:main"
 divar-train-credit = "divar.pipelines.train_credit:main"
 divar-validate-raw = "divar.pipelines.validate_raw:main"
+divar-monitor-drift = "divar.pipelines.monitor_drift:main"
+divar-serve = "divar.serve.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

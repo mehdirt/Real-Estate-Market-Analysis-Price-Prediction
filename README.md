@@ -11,6 +11,8 @@ This project analyzes data from the **Divar** platform (an advertising company i
 
 **Phase 1** adds **DVC** pipelines, **Pandera** data validation, and **MLflow** experiment tracking.
 
+**Phase 2** adds **sklearn inference pipelines**, a **FastAPI** serving layer, **Evidently** drift reports, and **LightGBM** for credit prediction.
+
 ## 👥 Contributors
 
 - [Mahdi](https://github.com/mehdirt) 👨‍💻
@@ -40,6 +42,8 @@ See [data/README.md](data/README.md) for setup.
 │   ├── models/           # encoding, training, metrics
 │   ├── validation/       # Pandera schemas
 │   ├── tracking/         # MLflow helpers
+│   ├── serve/            # FastAPI inference API
+│   ├── monitoring/       # Evidently drift reports
 │   └── pipelines/        # CLI + DVC stages
 ├── dvc.yaml              # DVC pipeline definition
 ├── params.yaml           # DVC experiment parameters
@@ -47,6 +51,7 @@ See [data/README.md](data/README.md) for setup.
 ├── tests/
 ├── models/               # Saved model artifacts (DVC outs)
 ├── mlruns/               # MLflow local tracking (gitignored)
+├── reports/drift/        # Evidently HTML reports (DVC outs)
 └── requirements.txt
 ```
 
@@ -65,7 +70,8 @@ See [data/README.md](data/README.md) for setup.
 - **Core ML**: pandas, scikit-learn, LightGBM, category-encoders
 - **Notebooks / EDA**: matplotlib, seaborn, plotly, geopandas, folium
 - **Tuning** (credit notebook): Optuna
-- **MLOps**: DVC, MLflow, Pandera
+- **MLOps**: DVC, MLflow, Pandera, Evidently
+- **Serving**: FastAPI, uvicorn
 
 ## 📋 Prerequisites
 
@@ -113,10 +119,32 @@ mlflow ui                    # open http://127.0.0.1:5000
 
 ```bash
 divar-prepare-credit
-divar-train-credit --from-processed --mlflow
+divar-train-credit --from-processed --mlflow   # RF + LightGBM
 ```
 
 Set `MLFLOW_ENABLE=true` in `.env` to log runs without `--mlflow`.
+
+### Inference API (Phase 2)
+
+After training, start the API (expects `*_pipeline.joblib` under `models/`):
+
+```bash
+pip install -e ".[serving]"
+divar-serve
+# GET  http://127.0.0.1:8000/schema/price
+# POST http://127.0.0.1:8000/predict/price  {"model":"lightgbm","records":[{...}]}
+```
+
+Feature rows must match the **processed** schema (see `/schema/{task}`). Each saved model includes encoding + regressor in one sklearn `Pipeline`.
+
+### Drift monitoring
+
+```bash
+pip install -e ".[monitoring]"
+divar-monitor-drift --task price
+# or: dvc repro monitor_drift_price
+# → reports/drift/price_drift.html
+```
 
 ### Use in Python
 

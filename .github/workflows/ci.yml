@@ -16,7 +16,7 @@ jobs:
           python-version: "3.11"
       - name: Install package and dev deps
         run: |
-          pip install -e ".[dev,mlops]"
+          pip install -e ".[dev,mlops,serving,monitoring]"
       - name: Ruff
         run: ruff check src tests
       - name: Pytest
