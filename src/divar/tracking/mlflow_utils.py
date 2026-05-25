@@ -101,16 +101,27 @@ def log_credit_training_run(
         mlflow.log_params(_flatten_params({"outliers": cfg["outliers"], "split": cfg["split"]}))
         mlflow.log_params(_flatten_params(cfg["models"], prefix="models"))
 
-        for split_name, split_metrics in artifacts.get("metrics", {}).items():
-            for metric_name, value in split_metrics.items():
-                mlflow.log_metric(f"{split_name}_{metric_name}", float(value))
+        for split_name, split_models in artifacts.get("metrics", {}).items():
+            for model_name, model_metrics in split_models.items():
+                for metric_name, value in model_metrics.items():
+                    mlflow.log_metric(f"{split_name}_{model_name}_{metric_name}", float(value))
 
-        rf = artifacts["random_forest"]
+        sample = artifacts.get("sample_X")
+        signature = None
+        if sample is not None:
+            signature = infer_signature(sample, artifacts["random_forest"].predict(sample))
+
         reg = os.getenv("MLFLOW_REGISTER_MODELS", "false").lower() == "true"
-        kwargs = {}
+        rf_kwargs: dict[str, Any] = {}
+        lgb_kwargs: dict[str, Any] = {}
+        if signature is not None:
+            rf_kwargs["signature"] = signature
+            lgb_kwargs["signature"] = signature
         if reg:
-            kwargs["registered_model_name"] = "divar-credit-rf"
-        mlflow.sklearn.log_model(rf, name="random_forest", **kwargs)
+            rf_kwargs["registered_model_name"] = "divar-credit-rf"
+            lgb_kwargs["registered_model_name"] = "divar-credit-lgbm"
+        mlflow.sklearn.log_model(artifacts["random_forest"], name="random_forest", **rf_kwargs)
+        mlflow.sklearn.log_model(artifacts["lightgbm"], name="lightgbm", **lgb_kwargs)
 
         if models_dir is not None:
             mlflow.log_artifacts(str(models_dir), artifact_path="joblib_artifacts")

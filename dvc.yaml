@@ -91,3 +91,21 @@ stages:
       - configs/credit.yaml:
           - models
           - split
+
+  monitor_drift_price:
+    cmd: python -m divar.pipelines.monitor_drift --task price
+    deps:
+      - data/processed/price_train.parquet
+      - data/processed/price_val.parquet
+      - src/divar/monitoring
+    outs:
+      - reports/drift/price_drift.html
+
+  monitor_drift_credit:
+    cmd: python -m divar.pipelines.monitor_drift --task credit
+    deps:
+      - data/processed/credit_train.parquet
+      - data/processed/credit_val.parquet
+      - src/divar/monitoring
+    outs:
+      - reports/drift/credit_drift.html

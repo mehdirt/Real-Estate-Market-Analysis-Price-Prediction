@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 from divar.config import MODELS_DIR, load_config
 from divar.models.encoding import fit_feature_matrices, split_xy
 from divar.models.metrics import regression_metrics
+from divar.models.sklearn_pipeline import save_task_pipelines
 
 
 def train_price_models(
@@ -54,10 +55,12 @@ def train_price_models(
 
 
 def save_price_artifacts(artifacts: dict[str, Any], output_dir: str | Path | None = None) -> None:
-    """Persist models and encoders with joblib."""
+    """Persist models, encoders, and sklearn inference pipelines."""
     out = MODELS_DIR / "price" if output_dir is None else Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+    cfg = load_config("price")
     joblib.dump(artifacts["random_forest"], out / "random_forest.joblib")
     joblib.dump(artifacts["lightgbm"], out / "lightgbm.joblib")
     joblib.dump(artifacts["target_encoder"], out / "target_encoder.joblib")
     joblib.dump(artifacts["one_hot_encoder"], out / "one_hot_encoder.joblib")
+    save_task_pipelines(artifacts, "price", cfg, out)

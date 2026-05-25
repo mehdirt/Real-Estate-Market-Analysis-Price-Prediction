@@ -105,6 +105,9 @@ target/
 # Mypy cache
 .mypy_cache/
 
+# Drift reports (DVC can track HTML outputs)
+reports/drift/*.html
+
 # MLflow
 mlruns/
 

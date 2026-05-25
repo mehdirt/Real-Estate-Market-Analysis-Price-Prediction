@@ -6,12 +6,14 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import lightgbm as lgb
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 
 from divar.config import MODELS_DIR, load_config
 from divar.models.encoding import fit_feature_matrices, split_xy, transform_features
 from divar.models.metrics import regression_metrics
+from divar.models.sklearn_pipeline import save_task_pipelines
 
 
 def train_credit_models(
@@ -20,7 +22,7 @@ def train_credit_models(
     test: pd.DataFrame,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Train Random Forest and return metrics on val and test."""
+    """Train Random Forest + LightGBM; return metrics on val and test."""
     cfg = config or load_config("credit")
     target = cfg["target_column"]
 
@@ -35,13 +37,24 @@ def train_credit_models(
     rf = RandomForestRegressor(**rf_params)
     rf.fit(X_train_final, y_train)
 
+    lgb_params = cfg["models"]["lightgbm"]
+    lgb_model = lgb.LGBMRegressor(**lgb_params)
+    lgb_model.fit(X_train_final, y_train)
+
     metrics = {
-        "val": regression_metrics(y_val, rf.predict(X_val_final)),
-        "test": regression_metrics(y_test, rf.predict(X_test_final)),
+        "val": {
+            "random_forest": regression_metrics(y_val, rf.predict(X_val_final)),
+            "lightgbm": regression_metrics(y_val, lgb_model.predict(X_val_final)),
+        },
+        "test": {
+            "random_forest": regression_metrics(y_test, rf.predict(X_test_final)),
+            "lightgbm": regression_metrics(y_test, lgb_model.predict(X_test_final)),
+        },
     }
 
     return {
         "random_forest": rf,
+        "lightgbm": lgb_model,
         "target_encoder": te,
         "one_hot_encoder": ohe,
         "feature_columns": list(X_train_final.columns),
@@ -51,9 +64,12 @@ def train_credit_models(
 
 
 def save_credit_artifacts(artifacts: dict[str, Any], output_dir: str | Path | None = None) -> None:
-    """Persist credit model and encoders."""
+    """Persist models, encoders, and sklearn inference pipelines."""
     out = MODELS_DIR / "credit" if output_dir is None else Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+    cfg = load_config("credit")
     joblib.dump(artifacts["random_forest"], out / "random_forest.joblib")
+    joblib.dump(artifacts["lightgbm"], out / "lightgbm.joblib")
     joblib.dump(artifacts["target_encoder"], out / "target_encoder.joblib")
     joblib.dump(artifacts["one_hot_encoder"], out / "one_hot_encoder.joblib")
+    save_task_pipelines(artifacts, "credit", cfg, out)

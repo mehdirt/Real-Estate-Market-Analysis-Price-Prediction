@@ -40,14 +40,15 @@ def _load_splits(processed_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Da
 
 def _metrics_for_dvc(metrics: dict) -> dict[str, float]:
     flat = {}
-    for split_name, split_metrics in metrics.items():
-        for metric_name, value in split_metrics.items():
-            flat[f"{split_name}_{metric_name}"] = float(value)
+    for split_name, split_models in metrics.items():
+        for model_name, model_metrics in split_models.items():
+            for metric_name, value in model_metrics.items():
+                flat[f"{split_name}_{model_name}_{metric_name}"] = float(value)
     return flat
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Train credit Random Forest model.")
+    parser = argparse.ArgumentParser(description="Train credit RF and LightGBM models.")
     parser.add_argument("--from-processed", action="store_true")
     parser.add_argument("--processed-dir", type=str, default=str(PROCESSED_DATA_DIR))
     parser.add_argument("--models-dir", type=str, default=str(MODELS_DIR / "credit"))
