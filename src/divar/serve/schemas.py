@@ -28,14 +28,18 @@ class PredictResponse(BaseModel):
     task: TaskName
     model: ModelName
     predictions: list[float]
+    model_source: str = Field(description="local joblib files or mlflow Production registry")
 
 
 class HealthResponse(BaseModel):
     status: str
+    model_source: str
     models_loaded: dict[str, list[str]]
+    deployment: dict[str, Any] | None = None
 
 
 class SchemaResponse(BaseModel):
     task: TaskName
     feature_columns: list[str]
     target_column: str
+    model_source: str

@@ -59,6 +59,7 @@ divar-train-price = "divar.pipelines.train_price:main"
 divar-train-credit = "divar.pipelines.train_credit:main"
 divar-validate-raw = "divar.pipelines.validate_raw:main"
 divar-monitor-drift = "divar.pipelines.monitor_drift:main"
+divar-promote-model = "divar.pipelines.promote_model:main"
 divar-serve = "divar.serve.app:main"
 
 [tool.setuptools.packages.find]
