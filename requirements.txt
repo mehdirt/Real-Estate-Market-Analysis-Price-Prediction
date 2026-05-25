@@ -21,6 +21,7 @@ pandera>=0.18
 
 # Phase 2: serving & monitoring
 fastapi>=0.110
+fastapi-offline-docs>=1.0.0
 uvicorn[standard]>=0.27
 pydantic>=2.0
 evidently>=0.4.0
