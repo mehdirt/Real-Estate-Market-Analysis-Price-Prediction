@@ -28,6 +28,7 @@ enable_offline_docs(app)
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
+    """Service health, model source, loaded pipelines, and deployment manifest."""
     deployment = {}
     for task in ("price", "credit"):
         info = registry.deployment_info(task)
@@ -43,6 +44,7 @@ def health() -> HealthResponse:
 
 @app.get("/schema/{task}", response_model=SchemaResponse)
 def schema(task: TaskName) -> SchemaResponse:
+    """Return required input feature columns and target name for a task."""
     cfg = load_config(task)
     return SchemaResponse(
         task=task,
@@ -54,6 +56,7 @@ def schema(task: TaskName) -> SchemaResponse:
 
 @app.post("/predict/{task}", response_model=PredictResponse)
 def predict(task: TaskName, body: PredictRequest) -> PredictResponse:
+    """Predict sale price or total credit for one or more listings."""
     try:
         predictions = registry.predict(task, body.model, body.records)
     except FileNotFoundError as exc:
@@ -70,6 +73,7 @@ def predict(task: TaskName, body: PredictRequest) -> PredictResponse:
 
 
 def main() -> None:
+    """Start the FastAPI server (default ``127.0.0.1:8000``)."""
     import uvicorn
 
     host = os.getenv("SERVE_HOST", "127.0.0.1")

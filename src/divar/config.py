@@ -25,7 +25,14 @@ IRAN_CITY_CSV = Path(os.getenv("IRAN_CITY_CSV", RAW_DATA_DIR / "iran_city_classi
 
 
 def get_divar_path() -> Path:
-    """Return path to main Divar dataset, raising if missing."""
+    """
+    Resolve the main Divar CSV path from ``DIVAR_CSV`` or ``data/raw/Divar.csv``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file does not exist.
+    """
     path = DIVAR_CSV.expanduser().resolve()
     if not path.is_file():
         raise FileNotFoundError(
@@ -37,7 +44,14 @@ def get_divar_path() -> Path:
 
 @lru_cache
 def load_config(name: str) -> dict[str, Any]:
-    """Load a YAML config from configs/ (e.g. 'price' -> configs/price.yaml)."""
+    """
+    Load a YAML config from ``configs/{name}.yaml``.
+
+    Parameters
+    ----------
+    name
+        Config stem without extension (e.g. ``"price"``, ``"credit"``, ``"mlflow"``).
+    """
     path = CONFIGS_DIR / f"{name}.yaml"
     if not path.is_file():
         raise FileNotFoundError(f"Config not found: {path}")

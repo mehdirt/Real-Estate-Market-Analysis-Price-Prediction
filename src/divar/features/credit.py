@@ -54,6 +54,7 @@ DROP_ALWAYS = [
 
 
 def _clean_floor_value(x: Any) -> float:
+    """Parse floor strings (including ``5+``) to float; unselect/invalid → NaN."""
     if pd.isna(x):
         return np.nan
     if x == "unselect":
@@ -65,6 +66,7 @@ def _clean_floor_value(x: Any) -> float:
 
 
 def _clean_unit_per_floor(x: Any) -> float:
+    """Parse units-per-floor; map ``more_than_8`` to 9.0 for binning."""
     if pd.isna(x):
         return np.nan
     s = str(x).strip()
@@ -79,7 +81,12 @@ def _clean_unit_per_floor(x: Any) -> float:
 
 
 def prepare_credit_features(df: pd.DataFrame, config: dict[str, Any] | None = None) -> pd.DataFrame:
-    """Clean and engineer features for total_credit modeling (before splits)."""
+    """
+    Build features for rent/credit listings (``total_credit`` target).
+
+    Filters rows without sale price, derives ``total_credit``, and applies
+    the same style of cleaning as the credit prediction notebook.
+    """
     cfg = config or load_config("credit")
     outliers = cfg["outliers"]
     rare_cfg = cfg["rare_category"]

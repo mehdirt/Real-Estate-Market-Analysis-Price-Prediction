@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class DataValidationError(Exception):
-    """Raised when a dataset fails schema validation."""
+    """Raised when Pandera schema validation fails."""
 
 
 def validate_raw_divar(df: pd.DataFrame) -> None:
@@ -36,7 +36,11 @@ def validate_processed_price(
     val: pd.DataFrame,
     config: dict[str, Any] | None = None,
 ) -> None:
-    """Validate prepared price datasets."""
+    """
+    Validate prepared price train/val frames (target and building_size bounds).
+
+    Raises ``DataValidationError`` on failure.
+    """
     cfg = config or load_config("price")
     schema = processed_price_schema(cfg)
     for name, frame in ("train", train), ("val", val):
@@ -53,7 +57,11 @@ def validate_processed_credit(
     test: pd.DataFrame | None = None,
     config: dict[str, Any] | None = None,
 ) -> None:
-    """Validate prepared credit datasets."""
+    """
+    Validate prepared credit train/val/(optional) test frames.
+
+    Raises ``DataValidationError`` on failure.
+    """
     cfg = config or load_config("credit")
     schema = processed_credit_schema(cfg)
     splits = [("train", train), ("val", val)]

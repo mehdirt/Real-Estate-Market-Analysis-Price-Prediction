@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: run Pandera validation on the raw Divar CSV."""
     parser = argparse.ArgumentParser(description="Validate raw Divar CSV schema.")
     parser.parse_args(argv)
 

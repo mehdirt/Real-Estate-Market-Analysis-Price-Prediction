@@ -34,6 +34,7 @@ def _encode_frame(
     *,
     fit: bool,
 ) -> pd.DataFrame:
+    """Apply boolean encoding, target encoding, and one-hot; fit or transform only."""
     enc = cfg["encoding"]
     X = encode_boolean_features(X, enc["boolean_columns"])
     if fit:
@@ -65,7 +66,11 @@ def fit_feature_matrices(
     X_other: pd.DataFrame,
     config: dict[str, Any] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, TargetEncoder, OneHotEncoder]:
-    """Fit encoders on training data; transform train and other split."""
+    """
+    Fit encoders on ``X_train``/``y_train`` and transform train + another split.
+
+    Returns encoded matrices and fitted ``TargetEncoder`` / ``OneHotEncoder`` for reuse.
+    """
     cfg = config or load_config("price")
     enc = cfg["encoding"]
 

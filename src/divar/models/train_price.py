@@ -22,9 +22,13 @@ def train_price_models(
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
-    Train RF and LightGBM on prepared train/val frames.
+    Train Random Forest and LightGBM on prepared sale-price data.
 
-    Returns dict with models, encoders, and validation metrics.
+    Returns
+    -------
+    dict
+        Models, encoders, ``feature_columns``, ``sample_X``, and ``metrics``
+        (validation R²/MAE/RMSE per algorithm).
     """
     cfg = config or load_config("price")
     target = cfg["target_column"]
@@ -55,7 +59,12 @@ def train_price_models(
 
 
 def save_price_artifacts(artifacts: dict[str, Any], output_dir: str | Path | None = None) -> None:
-    """Persist models, encoders, and sklearn inference pipelines."""
+    """
+    Save joblib artifacts and sklearn inference pipelines under ``models/price/``.
+
+    Writes ``random_forest.joblib``, ``lightgbm.joblib``, encoders, and
+    ``{model}_pipeline.joblib`` files used by the API in local mode.
+    """
     out = MODELS_DIR / "price" if output_dir is None else Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     cfg = load_config("price")

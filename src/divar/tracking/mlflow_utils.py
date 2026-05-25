@@ -38,6 +38,7 @@ def setup_mlflow(task: TaskName) -> str:
 
 
 def _flatten_params(cfg: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+    """Flatten nested config dict for MLflow param logging."""
     flat: dict[str, Any] = {}
     for key, value in cfg.items():
         full_key = f"{prefix}{key}" if not prefix else f"{prefix}.{key}"
@@ -51,7 +52,7 @@ def _flatten_params(cfg: dict[str, Any], prefix: str = "") -> dict[str, Any]:
 
 
 def _metrics_to_flat(metrics: dict[str, Any], prefix: str = "") -> dict[str, float]:
-    """Flatten nested (credit) or flat (price) metrics for MLflow."""
+    """Flatten price or credit metric dicts into scalar MLflow metrics."""
     flat: dict[str, float] = {}
     if "val" in metrics and isinstance(metrics["val"], dict):
         for split_name, split_block in metrics.items():
@@ -70,6 +71,7 @@ def _metrics_to_flat(metrics: dict[str, Any], prefix: str = "") -> dict[str, flo
 
 
 def _should_register() -> bool:
+    """Whether qualified models should be registered (``MLFLOW_REGISTER_QUALIFIED``)."""
     return os.getenv("MLFLOW_REGISTER_QUALIFIED", "true").lower() == "true"
 
 
@@ -167,6 +169,7 @@ def log_price_training_run(
     run_name: str | None = None,
     models_dir: Path | str | None = None,
 ) -> str:
+    """Log a price training run to MLflow; returns the run ID."""
     del run_name
     return log_training_run("price", artifacts, config, models_dir=models_dir)
 
@@ -178,11 +181,13 @@ def log_credit_training_run(
     run_name: str | None = None,
     models_dir: Path | str | None = None,
 ) -> str:
+    """Log a credit training run to MLflow; returns the run ID."""
     del run_name
     return log_training_run("credit", artifacts, config, models_dir=models_dir)
 
 
 def write_dvc_metrics(metrics: dict[str, float], path: Path) -> None:
+    """Write flat JSON metrics for DVC ``metrics`` stage outputs."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)

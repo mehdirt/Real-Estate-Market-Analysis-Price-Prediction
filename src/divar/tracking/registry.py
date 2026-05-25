@@ -24,6 +24,7 @@ class RegistryValidationError(Exception):
 
 
 def load_mlflow_config() -> dict[str, Any]:
+    """Load ``configs/mlflow.yaml`` (experiments, registry names, R² threshold)."""
     from divar.config import load_config
 
     return load_config("mlflow")
@@ -35,7 +36,11 @@ def get_val_r2(
     *,
     split: str = "val",
 ) -> float | None:
-    """Extract validation R² for an algorithm from training metrics."""
+    """
+    Extract validation R² for one algorithm.
+
+    Supports flat price metrics or nested credit metrics (``metrics["val"][model]``).
+    """
     if model in metrics and isinstance(metrics[model], dict):
         return metrics[model].get("r2")
     if split in metrics and model in metrics[split]:
@@ -47,7 +52,11 @@ def qualifies_for_registry(
     val_r2: float | None,
     mlflow_cfg: dict[str, Any] | None = None,
 ) -> bool:
-    """Return True if validation R² meets the registry minimum."""
+    """
+    Return True if ``val_r2`` meets ``registry_validation.min_val_r2`` (default 0.65).
+
+    Override minimum via ``MLFLOW_MIN_VAL_R2`` environment variable.
+    """
     cfg = mlflow_cfg or load_mlflow_config()
     if val_r2 is None:
         return False
@@ -58,7 +67,7 @@ def qualifies_for_registry(
 
 
 def ensure_registered_model(client: MlflowClient, name: str) -> None:
-    """Create registered model if it does not exist."""
+    """Create the registered model entry in MLflow if missing."""
     try:
         client.get_registered_model(name)
     except Exception:

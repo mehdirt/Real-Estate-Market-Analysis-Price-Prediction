@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: validate processed price or credit parquet splits."""
     parser = argparse.ArgumentParser(description="Validate processed parquet datasets.")
     parser.add_argument(
         "--task",

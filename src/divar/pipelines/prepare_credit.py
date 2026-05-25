@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: build credit features, validate, and write train/val/test parquet files."""
     parser = argparse.ArgumentParser(description="Prepare rent/credit train/val/test parquet files.")
     parser.add_argument("--output-dir", type=str, default=str(PROCESSED_DATA_DIR))
     parser.add_argument("--skip-validation", action="store_true")

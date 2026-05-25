@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _load_splits(processed_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Load credit train/val/test parquet files from ``divar-prepare-credit``."""
     paths = {
         "train": processed_dir / "credit_train.parquet",
         "val": processed_dir / "credit_val.parquet",
@@ -39,6 +40,7 @@ def _load_splits(processed_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Da
 
 
 def _metrics_for_dvc(metrics: dict) -> dict[str, float]:
+    """Flatten val/test metrics per algorithm for DVC JSON output."""
     flat = {}
     for split_name, split_models in metrics.items():
         for model_name, model_metrics in split_models.items():
@@ -48,6 +50,7 @@ def _metrics_for_dvc(metrics: dict) -> dict[str, float]:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: train credit models, save artifacts, optional MLflow + DVC metrics."""
     parser = argparse.ArgumentParser(description="Train credit RF and LightGBM models.")
     parser.add_argument("--from-processed", action="store_true")
     parser.add_argument("--processed-dir", type=str, default=str(PROCESSED_DATA_DIR))

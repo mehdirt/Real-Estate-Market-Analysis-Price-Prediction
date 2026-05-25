@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: build price features, validate, and write train/val parquet files."""
     parser = argparse.ArgumentParser(description="Prepare sale price train/val parquet files.")
     parser.add_argument(
         "--output-dir",

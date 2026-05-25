@@ -7,7 +7,14 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
 def regression_metrics(y_true, y_pred) -> dict[str, float]:
-    """Return R2, MAE, and RMSE for predictions."""
+    """
+    Compute regression metrics for model evaluation.
+
+    Returns
+    -------
+    dict
+        Keys: ``r2``, ``mae``, ``rmse``.
+    """
     return {
         "r2": float(r2_score(y_true, y_pred)),
         "mae": float(mean_absolute_error(y_true, y_pred)),

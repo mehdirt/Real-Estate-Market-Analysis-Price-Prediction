@@ -26,6 +26,12 @@ class DivarFeatureTransformer(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, task: TaskName = "price"):
+        """
+        Parameters
+        ----------
+        task
+            ``"price"`` or ``"credit"`` — selects encoding config and column sets.
+        """
         self.task = task
         self.te_: TargetEncoder | None = None
         self.ohe_: OneHotEncoder | None = None
@@ -34,6 +40,7 @@ class DivarFeatureTransformer(BaseEstimator, TransformerMixin):
         self.feature_columns_: list[str] | None = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series | None = None):
+        """Fit target encoder and one-hot encoder on processed feature columns."""
         if y is None:
             raise ValueError("DivarFeatureTransformer.fit requires y")
         self.cfg_ = load_config(self.task)
@@ -52,6 +59,7 @@ class DivarFeatureTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform raw processed features to the numeric matrix used by the model."""
         if self.te_ is None or self.ohe_ is None or self.cfg_ is None:
             raise RuntimeError("Transformer is not fitted")
         enc = self.cfg_["encoding"]
@@ -142,7 +150,11 @@ def pipeline_from_fitted_encoders(
     config: dict[str, Any],
     feature_columns: list[str] | None = None,
 ) -> Pipeline:
-    """Build a fitted inference pipeline from training artifacts."""
+    """
+    Assemble a fitted ``features → model`` pipeline without refitting.
+
+    Reuses encoders and regressor from training so inference matches offline metrics.
+    """
     transformer = DivarFeatureTransformer(task=task)
     transformer.cfg_ = config
     transformer.te_ = te
@@ -158,7 +170,7 @@ def save_task_pipelines(
     config: dict[str, Any],
     output_dir: Path,
 ) -> None:
-    """Persist sklearn inference pipelines for each trained regressor."""
+    """Write ``{random_forest,lightgbm}_pipeline.joblib`` for local/API inference."""
     from pathlib import Path as PathLib
 
     import joblib
