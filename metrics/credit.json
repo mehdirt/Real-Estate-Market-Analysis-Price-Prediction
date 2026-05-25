@@ -1,8 +1,14 @@
 {
-  "val_r2": 0.7412069995766285,
-  "val_mae": 1591225852.6154838,
-  "val_rmse": 3956968244.707225,
-  "test_r2": 0.7481144122705088,
-  "test_mae": 1567599087.676199,
-  "test_rmse": 3911685581.632796
+  "val_random_forest_r2": 0.7412069995766285,
+  "val_random_forest_mae": 1591225852.6154838,
+  "val_random_forest_rmse": 3956968244.707225,
+  "val_lightgbm_r2": 0.747907137453758,
+  "val_lightgbm_mae": 1544126503.2271082,
+  "val_lightgbm_rmse": 3905409487.6401706,
+  "test_random_forest_r2": 0.7481144122705088,
+  "test_random_forest_mae": 1567599087.676199,
+  "test_random_forest_rmse": 3911685581.632796,
+  "test_lightgbm_r2": 0.7558761215565591,
+  "test_lightgbm_mae": 1538913978.9117324,
+  "test_lightgbm_rmse": 3850945836.3768654
 }
