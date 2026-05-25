@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI, HTTPException
 
 from divar.config import load_config
 from divar.models.sklearn_pipeline import inference_feature_columns
-from divar.serve.predictor import registry
+from divar.serve.predictor import model_source, registry
 from divar.serve.schemas import (
     HealthResponse,
     PredictRequest,
@@ -18,13 +20,23 @@ from divar.serve.schemas import (
 app = FastAPI(
     title="Divar ML API",
     description="Sale price and rent/credit prediction using trained sklearn pipelines.",
-    version="0.2.0",
+    version="0.2.1",
 )
 
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    return HealthResponse(status="ok", models_loaded=registry.list_available())
+    deployment = {}
+    for task in ("price", "credit"):
+        info = registry.deployment_info(task)
+        if info:
+            deployment[task] = info
+    return HealthResponse(
+        status="ok",
+        model_source=model_source(),
+        models_loaded=registry.list_available(),
+        deployment=deployment or None,
+    )
 
 
 @app.get("/schema/{task}", response_model=SchemaResponse)
@@ -34,6 +46,7 @@ def schema(task: TaskName) -> SchemaResponse:
         task=task,
         feature_columns=inference_feature_columns(task),
         target_column=cfg["target_column"],
+        model_source=model_source(),
     )
 
 
@@ -46,16 +59,23 @@ def predict(task: TaskName, body: PredictRequest) -> PredictResponse:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return PredictResponse(task=task, model=body.model, predictions=predictions)
+    return PredictResponse(
+        task=task,
+        model=body.model,
+        predictions=predictions,
+        model_source=model_source(),
+    )
 
 
 def main() -> None:
     import uvicorn
 
+    host = os.getenv("SERVE_HOST", "127.0.0.1")
+    port = int(os.getenv("SERVE_PORT", "8000"))
     uvicorn.run(
         "divar.serve.app:app",
-        host="0.0.0.0",
-        port=8000,
+        host=host,
+        port=port,
         reload=False,
     )
 

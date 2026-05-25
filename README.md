@@ -95,6 +95,10 @@ cp .env.example .env        # optional: customize paths
 |----------|---------|
 | `DATA_DIR` | `./data` |
 | `DIVAR_CSV` | `./data/raw/Divar.csv` |
+| `MLFLOW_MIN_VAL_R2` | `0.65` (registry gate) |
+| `MODEL_SOURCE` | `local` (`local` or `mlflow`) |
+| `SERVE_HOST` | `127.0.0.1` |
+| `SERVE_PORT` | `8000` |
 
 ### DVC pipeline (recommended)
 
@@ -124,6 +128,30 @@ divar-train-credit --from-processed --mlflow   # RF + LightGBM
 
 Set `MLFLOW_ENABLE=true` in `.env` to log runs without `--mlflow`.
 
+### MLflow naming, registry, and staging
+
+| Item | Pattern | Example |
+|------|---------|---------|
+| Experiment | `divar/{task}-prediction` | `divar/price-prediction` |
+| Run | `{task}-{timestamp}-rf-r2-…-lgb-r2-…` | `price-20250521T120000-rf-r2-0p7100-lgb-r2-0p8800` |
+| Registered model | `divar-{task}-{algorithm}` | `divar-price-lightgbm` |
+
+**Registry rule:** only models with **validation R² ≥ 0.65** are registered (override with `MLFLOW_MIN_VAL_R2`). Others are logged in the run but not versioned.
+
+**Stages:**
+1. **Training** → logs run + local `models/{task}/*_pipeline.joblib` (always overwritten = latest local)
+2. **Staging** → auto-assigned when a model qualifies at register time
+3. **Production** → manual: `divar-promote-model --task price --model lightgbm`
+
+**How the API picks models (`MODEL_SOURCE`):**
+
+| Mode | Behavior |
+|------|----------|
+| `local` (default) | Loads `models/{task}/{model}_pipeline.joblib` from the **last training run** on disk |
+| `mlflow` | Loads `models:/divar-{task}-{model}/Production` from the Model Registry |
+
+See `models/{task}/deployment.json` after training for run id, val R², and registry versions.
+
 ### Inference API (Phase 2)
 
 After training, start the API (expects `*_pipeline.joblib` under `models/`):
@@ -131,8 +159,14 @@ After training, start the API (expects `*_pipeline.joblib` under `models/`):
 ```bash
 pip install -e ".[serving]"
 divar-serve
+# Binds to 127.0.0.1:8000 by default (SERVE_HOST / SERVE_PORT)
+# GET  http://127.0.0.1:8000/health
 # GET  http://127.0.0.1:8000/schema/price
 # POST http://127.0.0.1:8000/predict/price  {"model":"lightgbm","records":[{...}]}
+
+# Production registry serving:
+# MODEL_SOURCE=mlflow divar-promote-model --task price --model lightgbm
+# MODEL_SOURCE=mlflow divar-serve
 ```
 
 Feature rows must match the **processed** schema (see `/schema/{task}`). Each saved model includes encoding + regressor in one sklearn `Pipeline`.

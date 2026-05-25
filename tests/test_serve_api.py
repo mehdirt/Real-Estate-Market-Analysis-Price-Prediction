@@ -31,8 +31,10 @@ def test_health(client_with_models):
     client, _ = client_with_models
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["status"] == "ok"
-    assert "random_forest" in r.json()["models_loaded"]["price"]
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["model_source"] == "local"
+    assert "random_forest" in body["models_loaded"]["price"]
 
 
 def test_predict_price(client_with_models):
