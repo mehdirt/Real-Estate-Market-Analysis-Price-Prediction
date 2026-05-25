@@ -25,6 +25,8 @@ class PredictRequest(BaseModel):
 
 
 class PredictResponse(BaseModel):
+    """Prediction results for a batch of listings."""
+
     task: TaskName
     model: ModelName
     predictions: list[float]
@@ -32,6 +34,8 @@ class PredictResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """Health check payload with loaded models and deployment info."""
+
     status: str
     model_source: str
     models_loaded: dict[str, list[str]]
@@ -39,6 +43,8 @@ class HealthResponse(BaseModel):
 
 
 class SchemaResponse(BaseModel):
+    """Feature column names and target for a prediction task."""
+
     task: TaskName
     feature_columns: list[str]
     target_column: str

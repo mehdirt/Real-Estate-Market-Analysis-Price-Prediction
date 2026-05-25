@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: move a Staging registry version to Production for API (mlflow mode)."""
     parser = argparse.ArgumentParser(
         description="Promote MLflow model version to Production (requires val R² >= 0.65 at register time)."
     )

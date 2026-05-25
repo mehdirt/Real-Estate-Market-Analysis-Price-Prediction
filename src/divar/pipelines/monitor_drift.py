@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: compare train vs val distributions and write an HTML drift report."""
     parser = argparse.ArgumentParser(description="Generate Evidently drift HTML report.")
     parser.add_argument("--task", choices=["price", "credit"], required=True)
     parser.add_argument("--processed-dir", type=str, default=str(PROCESSED_DATA_DIR))

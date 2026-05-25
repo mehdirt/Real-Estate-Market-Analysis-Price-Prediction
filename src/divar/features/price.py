@@ -65,7 +65,10 @@ def _apply_floor_features(train: pd.DataFrame, val: pd.DataFrame) -> tuple[pd.Da
 
 def prepare_price_features(df: pd.DataFrame, config: dict[str, Any] | None = None) -> pd.DataFrame:
     """
-    Clean and engineer features for sale price modeling (before train/val split).
+    Filter sell listings and engineer features for ``price_value`` modeling.
+
+    Keeps residential/commercial sell ads, bins building age and luxury scores,
+    and applies outlier bounds from config. Does not split or impute locations.
     """
     cfg = config or load_config("price")
     outliers = cfg["outliers"]

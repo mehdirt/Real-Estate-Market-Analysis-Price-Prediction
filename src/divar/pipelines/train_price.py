@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _load_splits(processed_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Load price train/val parquet files produced by ``divar-prepare-price``."""
     train_path = processed_dir / "price_train.parquet"
     val_path = processed_dir / "price_val.parquet"
     if not train_path.is_file() or not val_path.is_file():
@@ -31,6 +32,7 @@ def _load_splits(processed_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def _metrics_for_dvc(metrics: dict) -> dict[str, float]:
+    """Flatten nested validation metrics for DVC JSON output."""
     flat = {}
     for model_name, model_metrics in metrics.items():
         for metric_name, value in model_metrics.items():
@@ -39,6 +41,7 @@ def _metrics_for_dvc(metrics: dict) -> dict[str, float]:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry: train price models, save artifacts, optional MLflow + DVC metrics."""
     parser = argparse.ArgumentParser(description="Train sale price RF and LightGBM models.")
     parser.add_argument(
         "--from-processed",

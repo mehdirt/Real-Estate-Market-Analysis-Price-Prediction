@@ -22,7 +22,14 @@ def train_credit_models(
     test: pd.DataFrame,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Train Random Forest + LightGBM; return metrics on val and test."""
+    """
+    Train Random Forest and LightGBM for ``total_credit`` prediction.
+
+    Returns
+    -------
+    dict
+        Models, encoders, and ``metrics`` with ``val`` and ``test`` scores per algorithm.
+    """
     cfg = config or load_config("credit")
     target = cfg["target_column"]
 
@@ -64,7 +71,7 @@ def train_credit_models(
 
 
 def save_credit_artifacts(artifacts: dict[str, Any], output_dir: str | Path | None = None) -> None:
-    """Persist models, encoders, and sklearn inference pipelines."""
+    """Save joblib models, encoders, and inference pipelines under ``models/credit/``."""
     out = MODELS_DIR / "credit" if output_dir is None else Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     cfg = load_config("credit")

@@ -24,18 +24,32 @@ def model_source() -> str:
 
 
 class ModelRegistry:
-    """Lazy-load sklearn pipelines from local files or MLflow Model Registry."""
+    """
+    Load and cache sklearn inference pipelines for the API.
+
+    Source is controlled by ``MODEL_SOURCE``: ``local`` (joblib on disk) or
+    ``mlflow`` (Production stage in Model Registry).
+    """
 
     def __init__(self, models_root: Path | None = None):
+        """
+        Parameters
+        ----------
+        models_root
+            Base directory containing ``price/`` and ``credit/`` subfolders.
+            Defaults to project ``models/``.
+        """
         self.models_root = models_root or MODELS_DIR
         self._cache: dict[tuple[str, str], Pipeline] = {}
         self._source = model_source()
 
     @property
     def source(self) -> str:
+        """Active model source: ``local`` or ``mlflow`` (from ``MODEL_SOURCE``)."""
         return self._source
 
     def list_available(self) -> dict[str, list[str]]:
+        """Return algorithm names available per task for the current ``MODEL_SOURCE``."""
         out: dict[str, list[str]] = {}
         for task in ("price", "credit"):
             if self._source == "mlflow":
@@ -52,6 +66,7 @@ class ModelRegistry:
         return out
 
     def _list_mlflow_models(self, task: TaskName) -> list[str]:
+        """List algorithms with a Production version in MLflow Registry."""
         try:
             from mlflow.tracking import MlflowClient
 
@@ -81,6 +96,7 @@ class ModelRegistry:
         return read_deployment_manifest(task, self.models_root)
 
     def load(self, task: TaskName, model: ModelName) -> Pipeline:
+        """Load (and cache) the sklearn pipeline for ``task`` + ``model``."""
         key = (task, model)
         if key not in self._cache:
             if self._source == "mlflow":
@@ -122,6 +138,21 @@ class ModelRegistry:
         model: ModelName,
         records: list[dict],
     ) -> list[float]:
+        """
+        Run inference on one or more processed feature rows.
+
+        Parameters
+        ----------
+        records
+            Dicts with columns from ``inference_feature_columns(task)``.
+
+        Raises
+        ------
+        ValueError
+            If required feature columns are missing.
+        FileNotFoundError
+            If the model pipeline is not available.
+        """
         expected = inference_feature_columns(task)
         df = pd.DataFrame(records)
         missing = [c for c in expected if c not in df.columns]

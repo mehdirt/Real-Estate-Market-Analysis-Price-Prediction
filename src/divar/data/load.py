@@ -10,6 +10,7 @@ from divar.config import IRAN_CITY_CSV, get_divar_path
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
+    """Read CSV and drop optional index column ``Unnamed: 0``."""
     df = pd.read_csv(path)
     if "Unnamed: 0" in df.columns:
         df = df.drop(columns=["Unnamed: 0"])
