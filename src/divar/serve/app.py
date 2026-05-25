@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi_offline_docs import enable_offline_docs
 
 from divar.config import load_config
 from divar.models.sklearn_pipeline import inference_feature_columns
@@ -22,6 +23,7 @@ app = FastAPI(
     description="Sale price and rent/credit prediction using trained sklearn pipelines.",
     version="0.2.1",
 )
+enable_offline_docs(app)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -76,7 +78,7 @@ def main() -> None:
         "divar.serve.app:app",
         host=host,
         port=port,
-        reload=False,
+        reload=True,
     )
 
 
