@@ -4,45 +4,205 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ## 🌟 Project Description
-This project analyzes data from the **Divar** platform (an advertising company in Iran), including Exploratory Data Analysis (EDA), statistical analysis, recommender system, and price/rent prediction. The main goal is to use machine learning techniques to better understand the data and provide predictive models. 🚀
+
+This project analyzes data from the **Divar** platform (an advertising company in Iran), including Exploratory Data Analysis (EDA), statistical analysis, recommender system, and price/rent prediction. The main goal is to use machine learning techniques to better understand the data and provide predictive models.
+
+**Phase 0** adds an installable Python package, unified data paths, YAML configs, and CLI pipelines extracted from the original notebooks.
+
+**Phase 1** adds **DVC** pipelines, **Pandera** data validation, and **MLflow** experiment tracking.
+
+**Phase 2** adds **sklearn inference pipelines**, a **FastAPI** serving layer, **Evidently** drift reports, and **LightGBM** for credit prediction.
 
 ## 👥 Contributors
+
 - [Mahdi](https://github.com/mehdirt) 👨‍💻
 - [Ramin](https://github.com/raminBadri) 👨‍💻
 
 ## 📂 Dataset
-The dataset used in this project is not available in the repository due to its large size (approximately **1 million records** 📈). It consists of **64 columns**, including:
-- 20 numerical columns 🔢
-- 44 categorical columns 🏷️
+
+The dataset is not stored in Git (~1M rows, 64 columns). Place files under `data/raw/`:
+
+| File | Purpose |
+|------|---------|
+| `Divar.csv` | Main ads dataset (required for ML pipelines) |
+| `iran_city_classification.csv` | Optional, for statistical analysis |
+
+See [data/README.md](data/README.md) for setup.
 
 ## 🗂️ Project Structure
-The `divar_project` repository is divided into 5 main sections in `src/`:
 
-1. **EDA** (Exploratory Data Analysis) 🔍: Exploratory analysis of data to understand distributions, relationships, and patterns.
-2. **Statistical_analysis** 📊: Advanced statistical analyses such as statistical tests and statistical modeling.
-3. **recommender_system** 🤖: Implementation of a recommender system for suggesting products or ads.
-4. **prediction_price** 💰 and **prediction_rent** 🏠: Predictive models for purchase price and rent. These two sections are in a shared folder.
+```text
+├── configs/              # YAML: price.yaml, credit.yaml
+├── data/raw/             # Place Divar.csv here (gitignored)
+├── data/processed/       # Generated parquet splits
+├── notebooks/            # Original Jupyter notebooks
+├── src/divar/            # Installable Python package
+│   ├── data/             # load_divar()
+│   ├── features/         # price & credit feature engineering
+│   ├── models/           # encoding, training, metrics
+│   ├── validation/       # Pandera schemas
+│   ├── tracking/         # MLflow helpers
+│   ├── serve/            # FastAPI inference API
+│   ├── monitoring/       # Evidently drift reports
+│   └── pipelines/        # CLI + DVC stages
+├── dvc.yaml              # DVC pipeline definition
+├── params.yaml           # DVC experiment parameters
+├── metrics/              # DVC-tracked evaluation metrics (JSON)
+├── tests/
+├── models/               # Saved model artifacts (DVC outs)
+├── mlruns/               # MLflow local tracking (gitignored)
+├── reports/drift/        # Evidently HTML reports (DVC outs)
+└── requirements.txt
+```
 
-## 🛠️ Technologies and Libraries Used
-- **Data Processing**: pandas 📊, numpy 🔢, scipy 🔍
-- **Visualization**: matplotlib 📈, seaborn 🎨, plotly 📊, geopandas 🗺️
-- **Machine Learning**: sklearn 🤖, scipy 🔬
-- **Algorithms and Models**: k-means 📍, DBSCAN 🔄, LightGBM 🌟, Random Forest Regressor 🌲
+### Notebooks
+
+| Notebook | Purpose |
+|----------|---------|
+| `notebooks/EDA.ipynb` | Exploratory analysis |
+| `notebooks/statistical_analysis.ipynb` | Statistical tests |
+| `notebooks/ml_recommender_system.ipynb` | Geo clustering |
+| `notebooks/ml_prediction_price.ipynb` | Sale price (reference) |
+| `notebooks/ml_prediction_credit.ipynb` | Rent/credit (reference) |
+
+## 🛠️ Technologies
+
+- **Core ML**: pandas, scikit-learn, LightGBM, category-encoders
+- **Notebooks / EDA**: matplotlib, seaborn, plotly, geopandas, folium
+- **Tuning** (credit notebook): Optuna
+- **MLOps**: DVC, MLflow, Pandera, Evidently
+- **Serving**: FastAPI, uvicorn
 
 ## 📋 Prerequisites
-- Python 3.11 🐍
-- Install required libraries via `pip install -r requirements.txt` (the requirements.txt file should be available in the repository).
 
-## 🚀 How to Run
-1. Clone the repository: `git clone https://github.com/username/divar_project.git` 📥
-2. Navigate to the project directory: `cd divar_project` 📁
-3. Create a virtual environment (optional): `python -m venv env` 🏗️
-4. Install libraries: `pip install -r requirements.txt` 📦
-5. For each section, run the corresponding scripts (e.g., for EDA: `python eda/main.py` ▶️).
+- Python 3.11+
+- Raw data in `data/raw/Divar.csv` (or configure `.env`)
 
-## ⚠️ Important Notes
-- The original data is not uploaded to the repository due to its size. Please download the data from the relevant source and place it in the `data/` folder. 💾
-- For questions or collaboration, use Issues or Pull Requests. 💬
+## 🚀 Setup and Run
+
+```bash
+git clone https://github.com/username/divar_project.git
+cd divar_project
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env        # optional: customize paths
+```
+
+### Environment variables
+
+| Variable | Default |
+|----------|---------|
+| `DATA_DIR` | `./data` |
+| `DIVAR_CSV` | `./data/raw/Divar.csv` |
+| `MLFLOW_MIN_VAL_R2` | `0.65` (registry gate) |
+| `MODEL_SOURCE` | `local` (`local` or `mlflow`) |
+| `SERVE_HOST` | `127.0.0.1` |
+| `SERVE_PORT` | `8000` |
+
+### DVC pipeline (recommended)
+
+```bash
+pip install -e ".[mlops]"
+dvc add data/raw/Divar.csv   # once, then commit *.dvc
+dvc repro train_price        # validate → prepare → train (+ MLflow)
+dvc repro train_credit       # credit path
+dvc metrics show
+dvc exp show                 # compare experiment params
+```
+
+### CLI (sale price)
+
+```bash
+divar-prepare-price
+divar-train-price --from-processed --mlflow
+mlflow ui                    # open http://127.0.0.1:5000
+```
+
+### CLI (rent/credit)
+
+```bash
+divar-prepare-credit
+divar-train-credit --from-processed --mlflow   # RF + LightGBM
+```
+
+Set `MLFLOW_ENABLE=true` in `.env` to log runs without `--mlflow`.
+
+### MLflow naming, registry, and staging
+
+| Item | Pattern | Example |
+|------|---------|---------|
+| Experiment | `divar/{task}-prediction` | `divar/price-prediction` |
+| Run | `{task}-{timestamp}-rf-r2-…-lgb-r2-…` | `price-20250521T120000-rf-r2-0p7100-lgb-r2-0p8800` |
+| Registered model | `divar-{task}-{algorithm}` | `divar-price-lightgbm` |
+
+**Registry rule:** only models with **validation R² ≥ 0.65** are registered (override with `MLFLOW_MIN_VAL_R2`). Others are logged in the run but not versioned.
+
+**Stages:**
+1. **Training** → logs run + local `models/{task}/*_pipeline.joblib` (always overwritten = latest local)
+2. **Staging** → auto-assigned when a model qualifies at register time
+3. **Production** → manual: `divar-promote-model --task price --model lightgbm`
+
+**How the API picks models (`MODEL_SOURCE`):**
+
+| Mode | Behavior |
+|------|----------|
+| `local` (default) | Loads `models/{task}/{model}_pipeline.joblib` from the **last training run** on disk |
+| `mlflow` | Loads `models:/divar-{task}-{model}/Production` from the Model Registry |
+
+See `models/{task}/deployment.json` after training for run id, val R², and registry versions.
+
+### Inference API (Phase 2)
+
+After training, start the API (expects `*_pipeline.joblib` under `models/`):
+
+```bash
+pip install -e ".[serving]"
+divar-serve
+# Binds to 127.0.0.1:8000 by default (SERVE_HOST / SERVE_PORT)
+# GET  http://127.0.0.1:8000/health
+# GET  http://127.0.0.1:8000/schema/price
+# POST http://127.0.0.1:8000/predict/price  {"model":"lightgbm","records":[{...}]}
+
+# Production registry serving:
+# MODEL_SOURCE=mlflow divar-promote-model --task price --model lightgbm
+# MODEL_SOURCE=mlflow divar-serve
+```
+
+Feature rows must match the **processed** schema (see `/schema/{task}`). Each saved model includes encoding + regressor in one sklearn `Pipeline`.
+
+### Drift monitoring
+
+```bash
+pip install -e ".[monitoring]"
+divar-monitor-drift --task price
+# or: dvc repro monitor_drift_price
+# → reports/drift/price_drift.html
+```
+
+### Use in Python
+
+```python
+from divar.data import load_divar
+from divar.features import prepare_price_dataset
+
+df = load_divar()
+train, val = prepare_price_dataset(df)
+```
+
+### Tests
+
+```bash
+pytest -q
+```
+
+## ⚠️ Notes
+
+- Original notebooks used inconsistent CSV paths; use `load_divar()` or `.env` instead.
+- Clustering/recommender notebook is not yet extracted to the package.
+- Configure a DVC remote (`dvc remote add`) for team data sharing when ready.
+- For questions or collaboration, use Issues or Pull Requests.
 
 ## 📜 License
-This project is released under the **MIT License**. 📄
+
+MIT License.

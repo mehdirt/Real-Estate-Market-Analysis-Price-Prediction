@@ -1,0 +1,26 @@
+# MLflow experiment tracking and model registry
+
+experiments:
+  price: divar/price-prediction
+  credit: divar/credit-prediction
+
+# Registered model names: divar-{task}-{algorithm}
+registry:
+  name_prefix: divar
+  algorithms:
+    random_forest: random-forest
+    lightgbm: lightgbm
+
+# Validation gate before Model Registry (validation R², 0–1 scale)
+registry_validation:
+  min_val_r2: 0.65
+  metric: r2
+  split: val
+
+# Lifecycle stages (MLflow Model Registry)
+stages:
+  staging: Staging
+  production: Production
+
+# Auto-move qualified registrations to Staging; Production requires promote CLI
+auto_promote_to_staging: true

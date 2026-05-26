@@ -1,0 +1,45 @@
+schema: '2.0'
+stages:
+  prepare_price:
+    cmd: python -m divar.pipelines.prepare_price --output-dir data/processed
+    deps:
+    - path: configs/price.yaml
+      hash: md5
+      md5: 04e9e9805579959090c5afec400a9ad0
+      size: 1708
+    - path: data/raw/Divar.csv
+      hash: md5
+      md5: 0acc7b68e0f7fc4e8a50529cd59094ce
+      size: 793870470
+    - path: params.yaml
+      hash: md5
+      md5: 9ab1b183659857894d7be7e45d7e31fd
+      size: 529
+    - path: src/divar/features/price.py
+      hash: md5
+      md5: 45db22f0d0abb4affe0e42b86f51c6e0
+      size: 5190
+    - path: src/divar/validation
+      hash: md5
+      md5: a455025d40cd2b77e0cd07b3e4427c67.dir
+      size: 5322
+      nfiles: 3
+    params:
+      configs/price.yaml:
+        outliers:
+          building_size_min: 20
+          building_size_max: 3000
+          price_value_min: 500000000
+          price_value_max: 80000000000
+        split:
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: data/processed/price_train.parquet
+      hash: md5
+      md5: fda87b631e7c3e4c3f0e3d4d4c99b34b
+      size: 5393851
+    - path: data/processed/price_val.parquet
+      hash: md5
+      md5: a5f3dc6f93bf4693847a168a45365261
+      size: 1868211

@@ -1,0 +1,23 @@
+# DVC experiment parameters (override configs for `dvc exp run`)
+# Defaults align with configs/price.yaml and configs/credit.yaml.
+
+price:
+  split:
+    test_size: 0.2
+    random_state: 42
+  outliers:
+    building_size_min: 20
+    building_size_max: 3000
+    price_value_min: 500000000
+    price_value_max: 80000000000
+
+credit:
+  split:
+    test_size: 0.15
+    val_size: 0.1275
+    random_state: 42
+  outliers:
+    total_credit_min: 50000000
+    total_credit_max: 80000000000
+    building_size_min: 20
+    building_size_max: 3000

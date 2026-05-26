@@ -1,0 +1,111 @@
+# DVC pipeline: raw validation → prepare → processed validation → train
+# Prerequisites: pip install -e ".[mlops]" and data/raw/Divar.csv (see data/README.md)
+
+stages:
+  validate_raw:
+    cmd: python -m divar.pipelines.validate_raw
+    deps:
+      - data/raw/Divar.csv
+      - src/divar/validation
+      - src/divar/data
+
+  prepare_price:
+    cmd: python -m divar.pipelines.prepare_price --output-dir data/processed
+    deps:
+      - data/raw/Divar.csv
+      - configs/price.yaml
+      - params.yaml
+      - src/divar/features/price.py
+      - src/divar/validation
+    outs:
+      - data/processed/price_train.parquet
+      - data/processed/price_val.parquet
+    params:
+      - configs/price.yaml:
+          - outliers
+          - split
+
+  validate_price:
+    cmd: python -m divar.pipelines.validate_processed --task price
+    deps:
+      - data/processed/price_train.parquet
+      - data/processed/price_val.parquet
+      - configs/price.yaml
+      - src/divar/validation
+
+  train_price:
+    cmd: python -m divar.pipelines.train_price --from-processed --mlflow --metrics-file metrics/price.json
+    deps:
+      - data/processed/price_train.parquet
+      - data/processed/price_val.parquet
+      - configs/price.yaml
+      - src/divar/models
+    outs:
+      - models/price
+    metrics:
+      - metrics/price.json
+    params:
+      - configs/price.yaml:
+          - models
+          - split
+
+  prepare_credit:
+    cmd: python -m divar.pipelines.prepare_credit --output-dir data/processed
+    deps:
+      - data/raw/Divar.csv
+      - configs/credit.yaml
+      - params.yaml
+      - src/divar/features/credit.py
+      - src/divar/validation
+    outs:
+      - data/processed/credit_train.parquet
+      - data/processed/credit_val.parquet
+      - data/processed/credit_test.parquet
+    params:
+      - configs/credit.yaml:
+          - outliers
+          - split
+
+  validate_credit:
+    cmd: python -m divar.pipelines.validate_processed --task credit
+    deps:
+      - data/processed/credit_train.parquet
+      - data/processed/credit_val.parquet
+      - data/processed/credit_test.parquet
+      - configs/credit.yaml
+      - src/divar/validation
+
+  train_credit:
+    cmd: python -m divar.pipelines.train_credit --from-processed --mlflow --metrics-file metrics/credit.json
+    deps:
+      - data/processed/credit_train.parquet
+      - data/processed/credit_val.parquet
+      - data/processed/credit_test.parquet
+      - configs/credit.yaml
+      - src/divar/models
+    outs:
+      - models/credit
+    metrics:
+      - metrics/credit.json
+    params:
+      - configs/credit.yaml:
+          - models
+          - split
+
+  monitor_drift_price:
+    cmd: python -m divar.pipelines.monitor_drift --task price
+    deps:
+      - data/processed/price_train.parquet
+      - data/processed/price_val.parquet
+      - src/divar/monitoring
+    outs:
+      - reports/drift/price_drift.html
+
+  monitor_drift_credit:
+    cmd: python -m divar.pipelines.monitor_drift --task credit
+    deps:
+      - data/processed/credit_train.parquet
+      - data/processed/credit_val.parquet
+      - src/divar/monitoring
+    outs:
+      - reports/drift/credit_drift.html

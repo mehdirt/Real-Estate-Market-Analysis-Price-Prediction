@@ -1,0 +1,12 @@
+# Ignore patterns for DVC (see https://dvc.org/doc/user-guide/dvcignore)
+
+.env
+.git/
+.idea/
+.vscode/
+notebooks/
+mlruns/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+__pycache__/
