@@ -14,7 +14,9 @@ from divar.config import MODELS_DIR, PROCESSED_DATA_DIR, load_config
 from divar.data.load import load_divar
 from divar.features.credit import prepare_credit_dataset
 from divar.models.train_credit import save_credit_artifacts, train_credit_models
+from divar.tracking.deployment import write_deployment_manifest
 from divar.tracking.mlflow_utils import log_credit_training_run, write_dvc_metrics
+from divar.tracking.registry import get_val_r2
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -75,6 +77,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     artifacts = train_credit_models(train_data, val_data, test_data, cfg)
     save_credit_artifacts(artifacts, args.models_dir)
+
+    write_deployment_manifest(
+        "credit",
+        models_dir=Path(args.models_dir),
+        val_r2={m: get_val_r2(artifacts["metrics"], m) for m in ("random_forest", "lightgbm")},
+    )
 
     metrics_path = Path(args.models_dir) / "metrics.json"
     with metrics_path.open("w", encoding="utf-8") as f:

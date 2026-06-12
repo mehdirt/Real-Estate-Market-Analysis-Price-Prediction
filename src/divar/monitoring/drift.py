@@ -22,8 +22,8 @@ def generate_drift_report(
 
     Uses Evidently's DataDriftPreset.
     """
-    from evidently.metric_preset import DataDriftPreset
-    from evidently.report import Report
+    from evidently import Report
+    from evidently.presets import DataDriftPreset
 
     ref = reference.copy()
     cur = current.copy()
@@ -41,10 +41,10 @@ def generate_drift_report(
             cur = cur.drop(columns=[col])
 
     report = Report(metrics=[DataDriftPreset()])
-    report.run(reference_data=ref, current_data=cur)
+    snapshot = report.run(reference_data=ref, current_data=cur)
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    report.save_html(str(output_path))
+    snapshot.save_html(str(output_path))
     logger.info("Drift report saved to %s", output_path)
     return output_path

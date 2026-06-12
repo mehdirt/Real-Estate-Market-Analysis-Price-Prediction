@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pandera import Check, Column, DataFrameSchema
+from pandera.pandas import Check, Column, DataFrameSchema
 
 # Columns expected in the raw Divar export (subset used by pipelines).
 RAW_REQUIRED_COLUMNS = [

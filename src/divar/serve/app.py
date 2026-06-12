@@ -73,16 +73,17 @@ def predict(task: TaskName, body: PredictRequest) -> PredictResponse:
 
 
 def main() -> None:
-    """Start the FastAPI server (default ``127.0.0.1:8000``)."""
+    """Start the FastAPI server (default ``127.0.0.1:8000``). Set ``SERVE_RELOAD=true`` for dev auto-reload."""
     import uvicorn
 
     host = os.getenv("SERVE_HOST", "127.0.0.1")
     port = int(os.getenv("SERVE_PORT", "8000"))
+    reload = os.getenv("SERVE_RELOAD", "false").lower() == "true"
     uvicorn.run(
         "divar.serve.app:app",
         host=host,
         port=port,
-        reload=True,
+        reload=reload,
     )
 
 
