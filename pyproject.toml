@@ -47,6 +47,10 @@ serving = [
 monitoring = [
     "evidently>=0.4.0",
 ]
+ui = [
+    "streamlit>=1.28",
+    "requests>=2.31",
+]
 dev = [
     "pytest>=7.4",
     "httpx>=0.27",
@@ -62,6 +66,7 @@ divar-validate-raw = "divar.pipelines.validate_raw:main"
 divar-monitor-drift = "divar.pipelines.monitor_drift:main"
 divar-promote-model = "divar.pipelines.promote_model:main"
 divar-serve = "divar.serve.app:main"
+divar-streamlit = "divar.ui.launch:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

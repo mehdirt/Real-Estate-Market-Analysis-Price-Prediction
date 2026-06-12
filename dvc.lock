@@ -17,12 +17,12 @@ stages:
       size: 529
     - path: src/divar/features/price.py
       hash: md5
-      md5: 45db22f0d0abb4affe0e42b86f51c6e0
-      size: 5190
+      md5: 76d4361306dbecedf4209c31b9a2e7eb
+      size: 5346
     - path: src/divar/validation
       hash: md5
-      md5: a455025d40cd2b77e0cd07b3e4427c67.dir
-      size: 5322
+      md5: a310f55d244ed8229e3b18adfcd29e9b.dir
+      size: 5509
       nfiles: 3
     params:
       configs/price.yaml:
@@ -43,3 +43,94 @@ stages:
       hash: md5
       md5: a5f3dc6f93bf4693847a168a45365261
       size: 1868211
+  validate_raw:
+    cmd: python -m divar.pipelines.validate_raw
+    deps:
+    - path: data/raw/Divar.csv
+      hash: md5
+      md5: 0acc7b68e0f7fc4e8a50529cd59094ce
+      size: 793870470
+    - path: src/divar/data
+      hash: md5
+      md5: 6a4bc3d8a8527b5ebc3d9eeb5d14a7f0.dir
+      size: 1346
+      nfiles: 2
+    - path: src/divar/validation
+      hash: md5
+      md5: a310f55d244ed8229e3b18adfcd29e9b.dir
+      size: 5509
+      nfiles: 3
+  validate_price:
+    cmd: python -m divar.pipelines.validate_processed --task price
+    deps:
+    - path: configs/price.yaml
+      hash: md5
+      md5: 04e9e9805579959090c5afec400a9ad0
+      size: 1708
+    - path: data/processed/price_train.parquet
+      hash: md5
+      md5: fda87b631e7c3e4c3f0e3d4d4c99b34b
+      size: 5393851
+    - path: data/processed/price_val.parquet
+      hash: md5
+      md5: a5f3dc6f93bf4693847a168a45365261
+      size: 1868211
+    - path: src/divar/validation
+      hash: md5
+      md5: a310f55d244ed8229e3b18adfcd29e9b.dir
+      size: 5509
+      nfiles: 3
+  train_price:
+    cmd: python -m divar.pipelines.train_price --from-processed --mlflow 
+      --metrics-file metrics/price.json
+    deps:
+    - path: configs/price.yaml
+      hash: md5
+      md5: 04e9e9805579959090c5afec400a9ad0
+      size: 1708
+    - path: data/processed/price_train.parquet
+      hash: md5
+      md5: fda87b631e7c3e4c3f0e3d4d4c99b34b
+      size: 5393851
+    - path: data/processed/price_val.parquet
+      hash: md5
+      md5: a5f3dc6f93bf4693847a168a45365261
+      size: 1868211
+    - path: src/divar/models
+      hash: md5
+      md5: 5d5c7ef880f9492cd65a909a628a758a.dir
+      size: 15677
+      nfiles: 6
+    params:
+      configs/price.yaml:
+        models:
+          random_forest:
+            n_estimators: 355
+            max_depth: 22
+            min_samples_split: 13
+            min_samples_leaf: 5
+            random_state: 42
+            n_jobs: -1
+          lightgbm:
+            n_estimators: 1147
+            learning_rate: 0.013036971615551675
+            num_leaves: 129
+            max_depth: 22
+            min_child_samples: 97
+            subsample: 0.6410214697523549
+            colsample_bytree: 0.6209832697195263
+            random_state: 42
+            n_jobs: -1
+        split:
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: metrics/price.json
+      hash: md5
+      md5: 6d2993378666b2c46e3e23982fba36c1
+      size: 243
+    - path: models/price
+      hash: md5
+      md5: fe3bfcb19e10c0b3f54f6be1884aab9f.dir
+      size: 1558942191
+      nfiles: 8

@@ -43,7 +43,8 @@ stages:
     outs:
       - models/price
     metrics:
-      - metrics/price.json
+      - metrics/price.json:
+          cache: false
     params:
       - configs/price.yaml:
           - models
@@ -86,7 +87,8 @@ stages:
     outs:
       - models/credit
     metrics:
-      - metrics/credit.json
+      - metrics/credit.json:
+          cache: false
     params:
       - configs/credit.yaml:
           - models
