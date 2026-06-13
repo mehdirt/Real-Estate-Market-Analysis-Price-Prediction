@@ -395,6 +395,25 @@ def _load_val(task: str) -> pd.DataFrame | None:
 
 
 @st.cache_data
+def _load_metrics(task: str) -> dict[str, float]:
+    """Return val R² per model from ``metrics/{task}.json``. Empty if missing."""
+    from divar.config import PROJECT_ROOT
+
+    path = PROJECT_ROOT / "metrics" / f"{task}.json"
+    if not path.is_file():
+        return {}
+    raw = json.loads(path.read_text())
+    out: dict[str, float] = {}
+    for model_full in ("random_forest", "lightgbm"):
+        for prefix in ("val_", ""):
+            r2_key = f"{prefix}{model_full}_r2"
+            if r2_key in raw:
+                out[model_full] = float(raw[r2_key])
+                break
+    return out
+
+
+@st.cache_data
 def _dynamic_options(task: str, field: str) -> list[str]:
     val = _load_val(task)
     if val is None or field not in val.columns:
@@ -542,24 +561,33 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-.block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 1400px; }
-h1, h2, h3, h4 { letter-spacing: -0.01em; }
+.block-container { padding-top: 1rem; padding-bottom: 1.5rem; max-width: 1400px; }
+h1, h2, h3, h4, h5 { letter-spacing: -0.01em; }
+h5 { margin: 0.25rem 0 0.5rem 0 !important; font-size: 0.95rem; font-weight: 600; color: #444; }
 .divar-hero {
     background: linear-gradient(135deg, #A4133C 0%, #FF6B6B 100%);
-    border-radius: 14px; padding: 1.4rem 1.6rem; margin-bottom: 1rem; color: #fff;
+    border-radius: 12px; padding: 0.85rem 1.2rem; margin: 0 0 0.85rem 0; color: #fff;
 }
-.divar-hero h1 { color: #fff; margin: 0 0 0.25rem 0; font-size: 1.65rem; font-weight: 700; }
-.divar-hero p { color: rgba(255,255,255,0.92); margin: 0; font-size: 0.95rem; }
+.divar-hero h1 { color: #fff; margin: 0 0 0.15rem 0; font-size: 1.35rem; font-weight: 700; }
+.divar-hero p { color: rgba(255,255,255,0.92); margin: 0; font-size: 0.85rem; }
 .divar-pill {
-    display: inline-block; padding: 2px 10px; border-radius: 999px;
-    font-size: 0.75rem; background: rgba(255,255,255,0.18); color: #fff;
-    margin-right: 6px; vertical-align: middle;
+    display: inline-block; padding: 1px 9px; border-radius: 999px;
+    font-size: 0.7rem; background: rgba(255,255,255,0.18); color: #fff;
+    margin-right: 5px; vertical-align: middle; font-weight: 500;
 }
-section[data-testid="stSidebar"] h2 { margin-top: 0.5rem; }
-div[data-testid="stMetricValue"] { font-size: 1.5rem; }
-.stTabs [data-baseweb="tab-list"] { gap: 4px; }
-.stTabs [data-baseweb="tab"] { padding: 6px 14px; }
-hr { margin: 0.5rem 0 1rem 0; }
+.divar-section {
+    font-size: 0.8rem; font-weight: 600; color: #888; text-transform: uppercase;
+    letter-spacing: 0.06em; margin: 1rem 0 0.25rem 0;
+}
+section[data-testid="stSidebar"] h3 { margin-top: 0.5rem; }
+div[data-testid="stMetricValue"] { font-size: 1.4rem; }
+div[data-testid="stMetricLabel"] { font-size: 0.78rem; }
+.stTabs [data-baseweb="tab-list"] { gap: 2px; border-bottom: 1px solid #eee; }
+.stTabs [data-baseweb="tab"] { padding: 6px 14px; font-size: 0.9rem; }
+.stTabs [data-baseweb="tab-panel"] { padding-top: 0.75rem; }
+div[data-testid="column"] > div[data-testid="stVerticalBlock"] { gap: 0.5rem; }
+hr { margin: 0.5rem 0 0.75rem 0; }
+.stRadio > label { font-size: 0.85rem; }
 </style>
     """,
     unsafe_allow_html=True,
@@ -582,8 +610,7 @@ with st.sidebar:
         st.caption("Or set `DIVAR_API_URL` to point elsewhere.")
         st.stop()
 
-    st.success(f"✅ API connected\n\n`{API_URL}`")
-    st.caption(f"Source: `{health.get('model_source', '?')}`")
+    st.success(f"✅ API connected · `{health.get('model_source', '?')}`")
     available = health.get("models_loaded", {}).get(task, [])
     if not available:
         st.warning(f"No models loaded for `{task}`.")
@@ -602,11 +629,19 @@ with st.sidebar:
         disabled=len(available) < 2,
     )
 
-    st.markdown("---")
-    st.caption(
-        f"Deployment manifest:\n\n"
-        f"```\n{json.dumps(health.get('deployment') or {}, indent=2)}\n```"
-    )
+    metrics = _load_metrics(task)
+    if metrics:
+        st.markdown("##### Validation R²")
+        cols = st.columns(len(metrics))
+        for (m, r2), col in zip(metrics.items(), cols):
+            short = "RF" if m == "random_forest" else "LGBM"
+            col.metric(short, f"{r2:.3f}")
+
+    if health.get("deployment"):
+        with st.expander("Deployment manifest"):
+            st.json(health["deployment"], expanded=False)
+
+    st.caption(f"API · `{API_URL}`")
 
 st.markdown(
     f"""
@@ -635,48 +670,68 @@ cfg = load_config(task)
 target_col = cfg["target_column"]
 feature_cols = inference_feature_columns(task)
 
-# -------------------------------------------------------------------- Picker
-st.subheader("1 · Pick a listing")
-state_key = f"row_idx_{task}"
-if state_key not in st.session_state:
-    st.session_state[state_key] = 0
+# ----------------------------------------------------- Picker (single key)
+input_key = f"input_{task}"
+last_row_key = f"last_row_{task}"
+result_key = f"result_{task}"
+if input_key not in st.session_state:
+    st.session_state[input_key] = 0
 
-picker_col, random_col, info_col = st.columns([3, 1, 2])
+
+def _randomize_row() -> None:
+    st.session_state[input_key] = random.randrange(len(val))
+    st.session_state.pop(result_key, None)
+
+
+def _reset_edits() -> None:
+    for k in list(st.session_state.keys()):
+        if k.startswith(f"edit_{task}_"):
+            del st.session_state[k]
+    st.session_state.pop(result_key, None)
+
+
+st.markdown('<div class="divar-section">① Pick a listing</div>', unsafe_allow_html=True)
+picker_col, random_col, info_col = st.columns([3, 1, 2], vertical_alignment="bottom")
 with picker_col:
-    idx = st.number_input(
-        f"Row from val set (0 – {len(val) - 1})",
-        min_value=0,
-        max_value=len(val) - 1,
-        value=int(st.session_state[state_key]),
-        key=f"input_{task}",
+    idx = int(
+        st.number_input(
+            f"Row from val set (0 – {len(val) - 1})",
+            min_value=0,
+            max_value=len(val) - 1,
+            step=1,
+            key=input_key,
+        )
     )
-    st.session_state[state_key] = int(idx)
 with random_col:
-    st.write("")
-    st.write("")
-    if st.button("🎲 Random", use_container_width=True):
-        st.session_state[state_key] = random.randrange(len(val))
-        st.rerun()
+    st.button(
+        "🎲 Random listing",
+        use_container_width=True,
+        key=f"rand_{task}",
+        on_click=_randomize_row,
+    )
 with info_col:
-    st.write("")
     st.metric(
-        "Actual target",
-        _format_money(float(val.iloc[int(st.session_state[state_key])][target_col])),
-        help=f"`{target_col}` from the val set.",
+        "🎯 Actual target",
+        _format_money(float(val.iloc[idx][target_col])),
+        help=f"`{target_col}` from the val set for this row.",
     )
 
-row = val.iloc[int(st.session_state[state_key])]
+# When the row changes, clear field-widget session state so widgets re-init
+# from the new row's values (Streamlit ignores ``value=`` once a key has state).
+if st.session_state.get(last_row_key) != idx:
+    for k in list(st.session_state.keys()):
+        if k.startswith(f"edit_{task}_"):
+            del st.session_state[k]
+    st.session_state[last_row_key] = idx
+    st.session_state.pop(result_key, None)
 
-# ----------------------------------------------------------------- Features
-st.subheader("2 · Features")
+row = val.iloc[idx]
+
+# ---------------------------------------------------------------- Features
+st.markdown('<div class="divar-section">② Features</div>', unsafe_allow_html=True)
 
 task_meta = FIELD_META[task]
-missing = [c for c in feature_cols if c not in task_meta]
-if missing:
-    st.warning(f"No metadata for: {', '.join(missing)} — they will use defaults.")
-
 features_col, map_col = st.columns([3, 2], gap="large")
-
 overrides: dict[str, Any] = {}
 
 with features_col:
@@ -696,11 +751,6 @@ with features_col:
                         task, field, task_meta[field], row[field], "edit"
                     )
 
-    untyped = [c for c in feature_cols if c not in task_meta]
-    if untyped:
-        with st.expander("Other features (read-only)"):
-            st.dataframe(row[untyped], use_container_width=True)
-
 with map_col:
     st.markdown("##### 📍 Location preview")
     lat = overrides.get("location_latitude", row.get("location_latitude"))
@@ -713,27 +763,28 @@ with map_col:
         )
     else:
         st.info("No coordinates for this listing.")
-
-    st.markdown("##### 📋 Raw row snapshot")
-    with st.expander("View raw val row"):
+    with st.expander("📋 Raw row snapshot"):
         st.dataframe(row, use_container_width=True)
 
-# ------------------------------------------------------------------ Predict
-st.subheader("3 · Predict")
+# ---------------------------------------------------------------- Predict
+st.markdown('<div class="divar-section">③ Predict</div>', unsafe_allow_html=True)
 predict_col, reset_col, _ = st.columns([2, 1, 4])
 with predict_col:
-    predict_clicked = st.button("🚀 Run prediction", type="primary", use_container_width=True)
+    predict_clicked = st.button(
+        "🚀 Run prediction", type="primary", use_container_width=True, key=f"predict_{task}"
+    )
 with reset_col:
-    if st.button("↺ Reset edits", use_container_width=True):
-        for k in list(st.session_state.keys()):
-            if k.startswith(f"edit_{task}_"):
-                del st.session_state[k]
-        st.rerun()
+    st.button(
+        "↺ Reset edits",
+        use_container_width=True,
+        key=f"reset_{task}",
+        on_click=_reset_edits,
+        help="Restore every feature to the val row's original value.",
+    )
 
 if predict_clicked:
     record = _row_to_record(row, feature_cols, overrides)
     actual = float(row[target_col]) if pd.notna(row[target_col]) else None
-
     models_to_run = available if compare_models else [model]
     results: list[tuple[str, float]] = []
     with st.spinner("Calling /predict …"):
@@ -743,31 +794,39 @@ if predict_clicked:
                 st.error(f"{m}: {err}")
                 continue
             results.append((m, pred))
+    st.session_state[result_key] = {
+        "results": results,
+        "actual": actual,
+        "record": record,
+        "model_for_payload": models_to_run[0] if models_to_run else model,
+    }
 
-    if results:
-        st.markdown("#### Result")
-        cards = st.columns(len(results) + (1 if actual is not None else 0))
-        for (m, pred), col in zip(results, cards):
-            with col:
-                label = "🌲 Random Forest" if m == "random_forest" else "⚡ LightGBM"
-                delta = None
-                if actual is not None:
-                    err_pct = 100.0 * (pred - actual) / actual if actual else 0.0
-                    delta = f"{err_pct:+.1f}% vs actual"
-                st.metric(label, _format_money(pred), delta=delta, delta_color="inverse")
-        if actual is not None:
-            with cards[-1]:
-                st.metric("🎯 Actual", _format_money(actual))
-
-        with st.expander("Show request payload"):
-            st.code(
-                json.dumps(
-                    {"model": models_to_run[0], "records": [record]},
-                    indent=2,
-                    default=str,
-                ),
-                language="json",
-            )
+result = st.session_state.get(result_key)
+if result and result["results"]:
+    st.markdown("#### Result")
+    actual = result["actual"]
+    results = result["results"]
+    cards = st.columns(len(results) + (1 if actual is not None else 0))
+    for (m, pred), col in zip(results, cards):
+        with col:
+            label = "🌲 Random Forest" if m == "random_forest" else "⚡ LightGBM"
+            delta = None
+            if actual is not None:
+                err_pct = 100.0 * (pred - actual) / actual if actual else 0.0
+                delta = f"{err_pct:+.1f}% vs actual"
+            st.metric(label, _format_money(pred), delta=delta, delta_color="inverse")
+    if actual is not None:
+        with cards[-1]:
+            st.metric("🎯 Actual", _format_money(actual))
+    with st.expander("Show request payload"):
+        st.code(
+            json.dumps(
+                {"model": result["model_for_payload"], "records": [result["record"]]},
+                indent=2,
+                default=str,
+            ),
+            language="json",
+        )
 
 st.markdown("---")
 st.caption(
